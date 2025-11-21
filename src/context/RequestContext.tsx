@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { toast } from 'react-hot-toast';
 import { mockRequests } from '../data/mockData';
 import type { ApprovalDecision, PurchaseRequest, RequestItem, Role } from '../types';
 
@@ -68,6 +69,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       };
 
       setRequests(prev => [newRequest, ...prev]);
+      toast.success('Request submitted');
       return newRequest;
     },
     [],
@@ -139,6 +141,7 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
             };
           }
         }
+        toast.success('Approval recorded');
         return updated;
       }),
     );
@@ -149,12 +152,14 @@ export const RequestProvider = ({ children }: { children: ReactNode }) => {
       prev.map(req => {
         if (req.id !== id || req.status !== 'PENDING') return req;
         const approval = appendApproval(req, role, approverName, 'rejected', comment);
-        return {
+        const updated = {
           ...req,
           status: 'REJECTED',
           approvals: [...req.approvals, approval],
           requiredApprovalLevels: 0,
         };
+        toast.error('Request rejected');
+        return updated;
       }),
     );
   }, []);
