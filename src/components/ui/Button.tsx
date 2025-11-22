@@ -21,28 +21,50 @@ const sizes: Record<Size, string> = {
   lg: 'px-5 py-3 text-sm',
 };
 
+const spinnerColor: Record<Variant, string> = {
+  primary: 'border-white/60 border-t-white',
+  secondary: 'border-slate-400 border-t-slate-600',
+  ghost: 'border-slate-400 border-t-slate-600',
+  danger: 'border-white/60 border-t-white',
+};
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   fullWidth?: boolean;
+  loading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', fullWidth, className, children, ...props }, ref) => (
-    <button
-      ref={ref}
-      className={clsx(
-        'rounded-full font-semibold shadow-sm transition duration-200 ease-out focus-visible:outline-none focus-visible:ring disabled:cursor-not-allowed disabled:opacity-60 active:scale-95',
-        variants[variant],
-        sizes[size],
-        fullWidth && 'w-full',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  ),
+  ({ variant = 'primary', size = 'md', fullWidth, className, loading = false, children, disabled, ...props }, ref) => {
+    const spinner = (
+      <span
+        className={clsx(
+          'h-4 w-4 animate-spin rounded-full border-2',
+          spinnerColor[variant],
+        )}
+        aria-hidden="true"
+      />
+    );
+
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={clsx(
+          'inline-flex items-center justify-center gap-2 rounded-full font-semibold shadow-sm transition duration-200 ease-out focus-visible:outline-none focus-visible:ring cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 active:scale-95',
+          variants[variant],
+          sizes[size],
+          fullWidth && 'w-full',
+          className,
+        )}
+        {...props}
+      >
+        {loading && spinner}
+        <span>{children}</span>
+      </button>
+    );
+  },
 );
 
 Button.displayName = 'Button';

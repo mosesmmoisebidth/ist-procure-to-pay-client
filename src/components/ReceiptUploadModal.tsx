@@ -75,7 +75,7 @@ export const ReceiptUploadModal = ({ open, onClose, onSubmit, loading }: Receipt
             <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!file || loading}>
+            <Button type="submit" disabled={!file || loading} loading={loading}>
               Submit Receipt
             </Button>
           </div>

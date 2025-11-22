@@ -76,8 +76,12 @@ export const ApprovalDecisionModal = ({
             <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" variant={mode === 'approve' ? 'primary' : 'danger'} disabled={loading}>
-              {loading ? 'Saving...' : mode === 'approve' ? 'Approve' : 'Reject'}
+            <Button
+              type="submit"
+              variant={mode === 'approve' ? 'primary' : 'danger'}
+              loading={loading}
+            >
+              {mode === 'approve' ? 'Approve' : 'Reject'}
             </Button>
           </div>
         </form>

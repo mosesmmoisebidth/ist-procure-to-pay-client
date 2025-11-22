@@ -167,7 +167,11 @@ export const RequestDetailPage = () => {
             </Button>
           )}
           {isOwner && request.status === 'APPROVED' && (
-            <Button variant="secondary" onClick={() => setShowUploadModal(true)}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowUploadModal(true)}
+              loading={receiptMutation?.isPending}
+            >
               <Upload className="mr-2 h-4 w-4" />
               {request.receiptUrl ? 'Replace Receipt' : 'Upload Receipt'}
             </Button>

@@ -20,6 +20,7 @@ export const RequestFormPage = () => {
   const { data: existing, isLoading: loadingRequest } = useRequestDetail(mode === 'edit' ? id : undefined);
   const createMutation = useCreateRequest();
   const updateMutation = id ? useUpdateRequest(id) : null;
+  const isSubmitting = mode === 'create' ? createMutation.isPending : Boolean(updateMutation?.isPending);
 
   const [form, setForm] = useState({
     title: '',
@@ -261,14 +262,14 @@ export const RequestFormPage = () => {
         </Card>
 
         <div className="flex justify-between gap-3">
-          <Button variant="ghost" type="button" onClick={() => navigate(-1)}>
+          <Button variant="ghost" type="button" onClick={() => navigate(-1)} disabled={isSubmitting}>
             Cancel
           </Button>
           <div className="flex gap-2">
-            <Button variant="secondary" type="button">
+            <Button variant="secondary" type="button" disabled={isSubmitting}>
               Save draft
             </Button>
-            <Button type="submit">
+            <Button type="submit" loading={isSubmitting}>
               {mode === 'create' ? 'Submit Request' : 'Save Changes'}
             </Button>
           </div>
