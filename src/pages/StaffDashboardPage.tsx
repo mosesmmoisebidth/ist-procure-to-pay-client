@@ -134,17 +134,17 @@ export const StaffDashboardPage = () => {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-100 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="overflow-x-auto rounded-3xl border border-slate-100 shadow-sm">
+            <table className="min-w-full divide-y divide-slate-100 text-sm bg-white">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-5 py-3">Request</th>
-                  <th className="px-5 py-3">Vendor</th>
-                  <th className="px-5 py-3">Indicators</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Amount</th>
-                  <th className="px-5 py-3">Age</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                  <th className="px-5 py-3 text-blue-400">Request</th>
+                  <th className="px-5 py-3 text-blue-400">Vendor</th>
+                  <th className="px-5 py-3 text-blue-400">Indicators</th>
+                  <th className="px-5 py-3 text-blue-400">Status</th>
+                  <th className="px-5 py-3 text-right text-blue-400">Amount</th>
+                  <th className="px-5 py-3 text-blue-400">Age</th>
+                  <th className="px-5 py-3 text-right text-blue-400">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

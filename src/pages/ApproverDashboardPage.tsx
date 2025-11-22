@@ -28,9 +28,9 @@ export const ApproverDashboardPage = () => {
           <ShieldCheck className="h-7 w-7" />
         </div>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-slate-100 text-sm">
-          <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+          <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-emerald-500/80">
             <tr>
               <th className="px-5 py-3">Request</th>
               <th className="px-5 py-3">Staff</th>
