@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CheckCircle2, ReceiptText, AlertTriangle } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../utils/format';
 import { StatCard } from '../components/StatCard';
@@ -30,17 +31,38 @@ export const FinanceDashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-gradient-to-r from-slate-50 via-white to-emerald-50 px-6 py-5">
         <div>
-          <p className="text-sm uppercase tracking-wide text-slate-400">Finance Workspace</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Finance workspace</p>
           <h1 className="text-2xl font-semibold text-slate-900">Approved Requests</h1>
+          <p className="text-sm text-slate-600">Monitor receipt uploads and highlight mismatched validations.</p>
+        </div>
+        <div className="rounded-2xl bg-white p-3 text-slate-600 shadow-inner">
+          <ReceiptText className="h-7 w-7" />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Approved" value={String(stats.approved)} />
-        <StatCard title="With receipt" value={String(stats.withReceipt)} />
-        <StatCard title="Exceptions" value={String(stats.mismatched)} subtitle="Receipt vs PO mismatches" />
+        <StatCard
+          title="Approved"
+          value={String(stats.approved)}
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          iconBgClassName="bg-emerald-50 text-emerald-600"
+        />
+        <StatCard
+          title="With receipt"
+          value={String(stats.withReceipt)}
+          icon={<ReceiptText className="h-5 w-5" />}
+          iconBgClassName="bg-blue-50 text-blue-600"
+        />
+        <StatCard
+          title="Exceptions"
+          value={String(stats.mismatched)}
+          subtitle="Receipt vs PO mismatches"
+          pulse={stats.mismatched > 0}
+          icon={<AlertTriangle className="h-5 w-5" />}
+          iconBgClassName="bg-rose-50 text-rose-600"
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white">

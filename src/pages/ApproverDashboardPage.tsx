@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { ShieldCheck, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -17,9 +18,15 @@ export const ApproverDashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm uppercase tracking-wide text-slate-400">Approver Workspace</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Pending Approvals</h1>
+      <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 px-6 py-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Approver workspace</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Pending Approvals</h1>
+          <p className="text-sm text-slate-600">Review the oldest items first to keep procurement moving.</p>
+        </div>
+        <div className="rounded-2xl bg-white p-3 text-emerald-600 shadow-inner">
+          <ShieldCheck className="h-7 w-7" />
+        </div>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white">
         <table className="min-w-full divide-y divide-slate-100 text-sm">
@@ -72,7 +79,8 @@ export const ApproverDashboardPage = () => {
         </table>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
+            <History className="h-4 w-4 text-slate-400" />
             My recent decisions
           </div>
           <div className="divide-y divide-slate-100">

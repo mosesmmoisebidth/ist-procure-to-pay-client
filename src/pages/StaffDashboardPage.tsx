@@ -1,7 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, CheckCircle2, Receipt, Shield, RefreshCcw } from 'lucide-react';
+import {
+  FileText,
+  CheckCircle2,
+  Receipt,
+  Shield,
+  RefreshCcw,
+  ClipboardList,
+  Clock3,
+  BadgeCheck,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useStaffRequests } from '../hooks/useApiRequests';
 import { StatusBadge } from '../components/StatusBadge';
@@ -51,25 +60,41 @@ export const StaffDashboardPage = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-100 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-6 py-5">
         <div>
-          <p className="text-sm uppercase tracking-wide text-slate-400">Staff Workspace</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500">Staff workspace</p>
           <h1 className="text-2xl font-semibold text-slate-900">My Purchase Requests</h1>
-          <p className="text-sm text-slate-500">Track every request from proforma to payment.</p>
+          <p className="text-sm text-slate-600">Track every request from proforma to payment.</p>
         </div>
         <Link to="/requests/new">
-          <Button size="md">Create New Request</Button>
+          <Button size="md">
+            Create New Request
+          </Button>
         </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Total requests" value={String(stats.total)} onClick={() => applyFilter('ALL')} />
-        <StatCard title="Pending approval" value={String(stats.pending)} onClick={() => applyFilter('PENDING')} />
+        <StatCard
+          title="Total requests"
+          value={String(stats.total)}
+          onClick={() => applyFilter('ALL')}
+          icon={<ClipboardList className="h-5 w-5" />}
+          iconBgClassName="bg-indigo-50 text-indigo-600"
+        />
+        <StatCard
+          title="Pending approval"
+          value={String(stats.pending)}
+          onClick={() => applyFilter('PENDING')}
+          icon={<Clock3 className="h-5 w-5" />}
+          iconBgClassName="bg-amber-50 text-amber-500"
+        />
         <StatCard
           title="Approved"
           value={String(stats.approved)}
           subtitle="With generated PO"
           onClick={() => applyFilter('APPROVED')}
+          icon={<BadgeCheck className="h-5 w-5" />}
+          iconBgClassName="bg-emerald-50 text-emerald-600"
         />
       </div>
 
