@@ -39,7 +39,7 @@ export const ApprovalTimeline = ({ approvals, currentLevel }: Props) => {
                 </div>
                 <p className="text-sm text-slate-500">
                   {decision
-                    ? `${decision.approverName} — ${formatDate(decision.timestamp)}`
+                    ? `${decision.approverName} - ${formatDate(decision.timestamp)}`
                     : 'Pending assignment'}
                 </p>
                 {decision?.comment && <p className="mt-2 text-sm text-slate-600">{decision.comment}</p>}

@@ -1,12 +1,13 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useRequestData } from '../context/RequestContext';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { FileDropzone } from '../components/FileDropzone';
+import { useCreateRequest, useRequestDetail, useUpdateRequest } from '../hooks/useApiRequests';
+import { useToast } from '../hooks/useToast';
 
 type Mode = 'create' | 'edit';
 
@@ -14,33 +15,45 @@ export const RequestFormPage = () => {
   const { id } = useParams();
   const mode: Mode = id ? 'edit' : 'create';
   const navigate = useNavigate();
+  const toast = useToast();
   const { user } = useAuth();
-  const { requests, createRequest, updateRequest } = useRequestData();
-  const existing = useMemo(() => requests.find(req => req.id === id), [requests, id]);
+  const { data: existing, isLoading: loadingRequest } = useRequestDetail(mode === 'edit' ? id : undefined);
+  const createMutation = useCreateRequest();
+  const updateMutation = id ? useUpdateRequest(id) : null;
 
   const [form, setForm] = useState({
     title: '',
     description: '',
-    amountEstimated: 0,
+    amountEstimated: '',
     currency: 'USD',
     neededBy: '',
     notes: '',
   });
   const [fileSummary, setFileSummary] = useState<{ name: string; size: number } | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (existing && mode === 'edit') {
       setForm({
+        // NOTE: adjust these field names if your API returns snake_case
         title: existing.title,
         description: existing.description,
-        amountEstimated: existing.amountEstimated,
+        amountEstimated: existing.amountEstimated ? String(existing.amountEstimated) : '',
         currency: existing.currency || 'USD',
         neededBy: existing.neededBy || '',
         notes: existing.notes || '',
       });
     }
   }, [existing, mode]);
+
+  if (mode === 'edit' && loadingRequest) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
+      </div>
+    );
+  }
 
   if (mode === 'edit' && !existing) {
     return (
@@ -50,43 +63,54 @@ export const RequestFormPage = () => {
     );
   }
 
+  const parsedAmount = Number(form.amountEstimated);
+  const hasValidAmount =
+    Boolean(form.amountEstimated) && !Number.isNaN(parsedAmount) && parsedAmount > 0;
   const errors = {
     title: touched.title && !form.title ? 'Please provide a request title.' : null,
     description: touched.description && !form.description ? 'Describe the business need.' : null,
     amount:
-      touched.amountEstimated && Number(form.amountEstimated) <= 0
-        ? 'Estimated amount must be greater than zero.'
-        : null,
+      touched.amountEstimated && !hasValidAmount ? 'Estimated amount must be greater than zero.' : null,
   };
 
-  const handleSubmit = (evt: FormEvent) => {
+  const handleSubmit = async (evt: FormEvent) => {
     evt.preventDefault();
-    if (!user || errors.title || errors.description || errors.amount) return;
-    if (mode === 'create') {
-      const created = createRequest(
-        {
+    if (!user || errors.title || errors.description || !hasValidAmount) {
+      if (!hasValidAmount) {
+        setTouched(prev => ({ ...prev, amountEstimated: true }));
+      }
+      return;
+    }
+
+    try {
+      if (mode === 'create') {
+        const fd = new FormData();
+        fd.append('title', form.title);
+        fd.append('description', form.description);
+        fd.append('amount_estimated', String(parsedAmount));
+        fd.append('currency', form.currency);
+        if (form.notes) fd.append('notes', form.notes);
+        if (form.neededBy) fd.append('needed_by', form.neededBy);
+        if (selectedFile) fd.append('proforma_file', selectedFile);
+
+        const created = await createMutation.mutateAsync(fd);
+        toast.success(`Request ${created.reference} created`);
+        navigate(`/requests/${created.id}`);
+      } else if (id && updateMutation) {
+        const payload: Record<string, unknown> = {
           title: form.title,
           description: form.description,
-          amountEstimated: Number(form.amountEstimated),
+          amount_estimated: parsedAmount,
           currency: form.currency,
-          notes: form.notes,
-          neededBy: form.neededBy,
-        },
-        user.name,
-        user.id,
-        user.role,
-      );
-      navigate(`/requests/${created.id}`);
-    } else if (id) {
-      updateRequest(id, {
-        title: form.title,
-        description: form.description,
-        amountEstimated: Number(form.amountEstimated),
-        currency: form.currency,
-        neededBy: form.neededBy,
-        notes: form.notes,
-      });
-      navigate(`/requests/${id}`);
+          needed_by: form.neededBy || null,
+          notes: form.notes || '',
+        };
+        await updateMutation.mutateAsync(payload);
+        toast.success('Request updated');
+        navigate(`/requests/${id}`);
+      }
+    } catch (error) {
+      toast.error('Unable to save request. Please review the form and try again.');
     }
   };
 
@@ -107,6 +131,7 @@ export const RequestFormPage = () => {
           Provide enough context for approvers to make rapid decisions.
         </p>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card className="p-6">
           <div className="flex items-center gap-3">
@@ -118,6 +143,7 @@ export const RequestFormPage = () => {
               <p className="text-xs text-slate-500">Describe what you need and why.</p>
             </div>
           </div>
+
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-slate-600">Request title</label>
@@ -131,12 +157,13 @@ export const RequestFormPage = () => {
               />
               {errors.title && <p className="mt-1 text-xs text-rose-500">{errors.title}</p>}
             </div>
+
             <div>
               <label className="text-sm font-medium text-slate-600">Estimated amount</label>
               <input
                 type="number"
                 value={form.amountEstimated}
-                onChange={e => setForm(prev => ({ ...prev, amountEstimated: Number(e.target.value) }))}
+                onChange={e => setForm(prev => ({ ...prev, amountEstimated: e.target.value }))}
                 onBlur={() => setTouched(prev => ({ ...prev, amountEstimated: true }))}
                 className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2 focus:border-blue-500 focus:outline-none"
                 min={0}
@@ -144,6 +171,7 @@ export const RequestFormPage = () => {
               />
               {errors.amount && <p className="mt-1 text-xs text-rose-500">{errors.amount}</p>}
             </div>
+
             <div>
               <label className="text-sm font-medium text-slate-600">Currency</label>
               <select
@@ -156,6 +184,7 @@ export const RequestFormPage = () => {
                 <option value="RWF">RWF</option>
               </select>
             </div>
+
             <div>
               <label className="text-sm font-medium text-slate-600">Needed by</label>
               <input
@@ -166,6 +195,7 @@ export const RequestFormPage = () => {
               />
             </div>
           </div>
+
           <div className="mt-4">
             <label className="text-sm font-medium text-slate-600">Description</label>
             <textarea
@@ -178,6 +208,7 @@ export const RequestFormPage = () => {
             />
             {errors.description && <p className="mt-1 text-xs text-rose-500">{errors.description}</p>}
           </div>
+
           <div>
             <label className="text-sm font-medium text-slate-600">Notes</label>
             <textarea
@@ -196,13 +227,20 @@ export const RequestFormPage = () => {
             </span>
             <div>
               <p className="text-sm font-semibold text-slate-700">Documents & extraction</p>
-              <p className="text-xs text-slate-500">Upload your vendor quotation to trigger AI extraction.</p>
+              <p className="text-xs text-slate-500">
+                Upload your vendor quotation to trigger AI extraction.
+              </p>
             </div>
           </div>
+
           <div className="mt-4">
             <FileDropzone
-              onFileSelect={file => setFileSummary(file ? { name: file.name, size: file.size } : null)}
+              onFileSelect={file => {
+                setSelectedFile(file);
+                setFileSummary(file ? { name: file.name, size: file.size } : null);
+              }}
             />
+
             {fileSummary && (
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <div className="flex items-center gap-3">
@@ -211,7 +249,10 @@ export const RequestFormPage = () => {
                   </div>
                   <div>
                     <p className="font-medium text-slate-800">{fileSummary.name}</p>
-                    <p className="text-xs text-slate-500">Processing… extracted totals will appear shortly.</p>
+                    <p className="text-xs text-slate-500">
+                      The proforma will be uploaded with your request and analyzed by AI to extract
+                      vendor, items, and totals.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -227,7 +268,9 @@ export const RequestFormPage = () => {
             <Button variant="secondary" type="button">
               Save draft
             </Button>
-            <Button type="submit">{mode === 'create' ? 'Submit Request' : 'Save Changes'}</Button>
+            <Button type="submit">
+              {mode === 'create' ? 'Submit Request' : 'Save Changes'}
+            </Button>
           </div>
         </div>
       </form>

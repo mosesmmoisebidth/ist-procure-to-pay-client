@@ -1,28 +1,19 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useRequestData } from '../context/RequestContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../utils/format';
+import { useApproverRequests } from '../hooks/useApiRequests';
 
 export const ApproverDashboardPage = () => {
   const { user } = useAuth();
-  const { requests } = useRequestData();
-
-  const data = useMemo(() => {
-    if (!user) return { pending: [], history: [] };
-    const pending = requests.filter(req => {
-      if (req.status !== 'PENDING') return false;
-      if (user.role === 'approver_lvl1' && req.currentApprovalLevel === 1) return true;
-      if (user.role === 'approver_lvl2' && req.currentApprovalLevel === 2) return true;
-      if (user.role === 'super_admin') return true;
-      return false;
-    });
-    const history = requests.filter(req =>
-      req.approvals.some(apr => apr.approverName === user.name),
-    );
-    return { pending, history };
-  }, [requests, user]);
+  const { data, isLoading } = useApproverRequests();
+  const pending = data?.results ?? [];
+  const history = useMemo(() => {
+    if (!user) return [];
+    const displayName = user.fullName || user.username;
+    return pending.filter(req => req.approvals.some(apr => apr.approverName === displayName));
+  }, [pending, user]);
 
   return (
     <div className="space-y-6">
@@ -43,14 +34,22 @@ export const ApproverDashboardPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {data.pending.map(req => (
-              <tr key={req.id} className="bg-white hover:bg-slate-50">
+            {isLoading && (
+              <tr>
+                <td colSpan={6} className="px-5 py-6">
+                  <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+                </td>
+              </tr>
+            )}
+            {!isLoading &&
+              pending.map(req => (
+                <tr key={req.id} className="bg-white hover:bg-slate-50">
                 <td className="px-5 py-4 text-slate-900">
                   <p className="font-semibold">{req.title}</p>
                   <p className="text-xs text-slate-500">Level {req.currentApprovalLevel}</p>
                 </td>
                 <td className="px-5 py-4 text-slate-600">{req.createdBy.name}</td>
-                <td className="px-5 py-4 text-slate-500">{req.vendorName || '—'}</td>
+                <td className="px-5 py-4 text-slate-500">{req.vendorName || 'N/A'}</td>
                 <td className="px-5 py-4 text-right font-medium text-slate-900">
                   {formatCurrency(req.amountEstimated, req.currency)}
                 </td>
@@ -61,8 +60,8 @@ export const ApproverDashboardPage = () => {
                   </Link>
                 </td>
               </tr>
-            ))}
-            {!data.pending.length && (
+              ))}
+            {!isLoading && pending.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
                   No requests awaiting your decision.
@@ -73,17 +72,17 @@ export const ApproverDashboardPage = () => {
         </table>
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
-          My recent decisions
-        </div>
-        <div className="divide-y divide-slate-100">
-          {data.history.map(entry => (
-            <div key={entry.id} className="flex items-center justify-between px-5 py-3">
+          <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
+            My recent decisions
+          </div>
+          <div className="divide-y divide-slate-100">
+            {history.map(entry => (
+              <div key={entry.id} className="flex items-center justify-between px-5 py-3">
               <div>
                 <p className="font-semibold text-slate-900">{entry.title}</p>
                 <p className="text-xs text-slate-500">
                   {entry.approvals
-                    .filter(apr => apr.approverName === user?.name)
+                    .filter(apr => apr.approverName === (user?.fullName || user?.username))
                     .map(apr => `${apr.decision} on ${formatDate(apr.timestamp)}`)
                     .join(', ')}
                 </p>
@@ -91,7 +90,7 @@ export const ApproverDashboardPage = () => {
               <StatusBadge status={entry.status} />
             </div>
           ))}
-          {!data.history.length && (
+          {!history.length && (
             <p className="px-5 py-4 text-center text-sm text-slate-500">No approvals recorded yet.</p>
           )}
         </div>

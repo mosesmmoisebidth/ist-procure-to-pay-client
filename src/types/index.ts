@@ -47,14 +47,57 @@ export interface ExtractionSummary {
   confidence?: number;
 }
 
+export interface DocumentExtractionResult {
+  id: string;
+  doc_type: 'proforma' | 'receipt' | 'po';
+  firebase_url: string;
+  raw_text?: string;
+  final_data: ExtractionSummary;
+  confidence_score: number;
+  created_at: string;
+}
+
+export interface ValidationVendorMatch {
+  expected?: string;
+  found?: string;
+  similarity?: number;
+}
+
+export interface ValidationAmountMatch {
+  expected?: number;
+  found?: number;
+  difference?: number;
+}
+
+export interface ValidationItemDifference {
+  item_name?: string;
+  issue?: string;
+  expected_quantity?: number;
+  found_quantity?: number;
+  expected_unit_price?: number;
+  found_unit_price?: number;
+}
+
+export interface ValidationLLMAnalysis {
+  summary?: string;
+  issues?: string[];
+  confidence?: number;
+}
+
 export interface ValidationDetails {
   is_match: boolean;
   score: number;
-  details?: Record<string, unknown>;
+  details?: {
+    vendor_match?: ValidationVendorMatch;
+    total_amount_match?: ValidationAmountMatch;
+    item_differences?: ValidationItemDifference[];
+    llm_analysis?: ValidationLLMAnalysis;
+  };
 }
 
 export interface PurchaseRequest {
   id: string;
+  reference: string;
   title: string;
   description: string;
   status: RequestStatus;
@@ -69,11 +112,11 @@ export interface PurchaseRequest {
   amountEstimated: number;
   amountFromProforma?: number;
   proformaUrl?: string;
-  proformaExtraction?: ExtractionSummary;
+  proformaExtraction?: DocumentExtractionResult;
   purchaseOrder?: PurchaseOrderInfo;
   receiptUrl?: string;
-  receiptExtraction?: ExtractionSummary;
-  validation?: ValidationDetails;
+  receiptExtraction?: DocumentExtractionResult;
+  latestValidation?: ValidationDetails;
   approvals: ApprovalDecision[];
   currentApprovalLevel: number;
   requiredApprovalLevels: number;

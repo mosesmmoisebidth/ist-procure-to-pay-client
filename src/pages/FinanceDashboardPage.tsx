@@ -1,33 +1,30 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useRequestData } from '../context/RequestContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../utils/format';
 import { StatCard } from '../components/StatCard';
+import { useFinanceRequests } from '../hooks/useApiRequests';
 
 type ValidationFilter = 'ALL' | 'MATCHED' | 'MISMATCHED' | 'UNPROCESSED';
 
 export const FinanceDashboardPage = () => {
-  const { requests } = useRequestData();
   const [validationFilter, setValidationFilter] = useState<ValidationFilter>('ALL');
-
-  const filtered = useMemo(() => {
-    return requests.filter(req => {
-      if (req.status !== 'APPROVED') return false;
-      if (validationFilter === 'ALL') return true;
-      if (validationFilter === 'UNPROCESSED') return !req.validation;
-      if (validationFilter === 'MATCHED') return req.validation?.is_match;
-      if (validationFilter === 'MISMATCHED') return req.validation && !req.validation.is_match;
-      return true;
-    });
-  }, [requests, validationFilter]);
+  const validationParam =
+    validationFilter === 'ALL'
+      ? undefined
+      : validationFilter === 'UNPROCESSED'
+        ? 'pending'
+        : validationFilter === 'MATCHED'
+          ? 'matched'
+          : 'mismatched';
+  const { data, isLoading } = useFinanceRequests(validationParam);
+  const requests = data?.results ?? [];
 
   const stats = useMemo(() => {
-    const approved = requests.filter(req => req.status === 'APPROVED');
     return {
-      approved: approved.length,
-      withReceipt: approved.filter(req => !!req.receiptUrl).length,
-      mismatched: approved.filter(req => req.validation && !req.validation.is_match).length,
+      approved: requests.length,
+      withReceipt: requests.filter(req => !!req.receiptUrl).length,
+      mismatched: requests.filter(req => req.latestValidation && !req.latestValidation.is_match).length,
     };
   }, [requests]);
 
@@ -84,32 +81,54 @@ export const FinanceDashboardPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(req => (
+              {isLoading && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-6">
+                    <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+                  </td>
+                </tr>
+              )}
+              {!isLoading && requests.map(req => (
                 <tr key={req.id} className="bg-white hover:bg-slate-50">
                   <td className="px-5 py-4">
                     <p className="font-semibold text-slate-900">{req.title}</p>
                     <StatusBadge status={req.status} />
                   </td>
-                  <td className="px-5 py-4 text-slate-600">{req.vendorName || '—'}</td>
+                  <td className="px-5 py-4 text-slate-600">{req.vendorName || 'N/A'}</td>
                   <td className="px-5 py-4 text-slate-800">
                     {req.purchaseOrder
                       ? formatCurrency(req.purchaseOrder.totalAmount, req.purchaseOrder.currency)
-                      : '—'}
+                      : 'N/A'}
                   </td>
                   <td className="px-5 py-4 text-slate-600">
-                    {req.receiptExtraction?.total_amount
-                      ? formatCurrency(req.receiptExtraction.total_amount, req.receiptExtraction.currency || 'USD')
-                      : 'Awaiting'}
+                    {req.latestValidation?.details?.total_amount_match?.found
+                      ? formatCurrency(
+                          Number(req.latestValidation.details.total_amount_match.found),
+                          req.purchaseOrder?.currency || req.currency || 'USD',
+                        )
+                      : req.receiptUrl
+                        ? 'Processing'
+                        : 'Awaiting'}
                   </td>
                   <td className="px-5 py-4">
-                    {req.validation ? (
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                          req.validation.is_match ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'
-                        }`}
-                      >
-                        {req.validation.is_match ? 'Matched' : 'Mismatched'}
-                      </span>
+                    {req.latestValidation ? (
+                      <div>
+                        <span
+                          title={req.latestValidation.details?.llm_analysis?.summary || undefined}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            req.latestValidation.is_match
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-rose-100 text-rose-700'
+                          }`}
+                        >
+                          {req.latestValidation.is_match ? 'Matched' : 'Mismatched'}
+                        </span>
+                        {req.latestValidation.details?.llm_analysis?.summary && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            {req.latestValidation.details.llm_analysis.summary}
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-xs font-semibold text-slate-400">Pending</span>
                     )}
@@ -121,7 +140,7 @@ export const FinanceDashboardPage = () => {
                   </td>
                 </tr>
               ))}
-              {!filtered.length && (
+              {!isLoading && !requests.length && (
                 <tr>
                   <td colSpan={6} className="px-5 py-10 text-center text-slate-500">
                     No requests match the selected filter.

@@ -6,6 +6,7 @@ import { RequestFormPage } from './pages/RequestFormPage';
 import { RequestDetailPage } from './pages/RequestDetailPage';
 import { ApproverDashboardPage } from './pages/ApproverDashboardPage';
 import { FinanceDashboardPage } from './pages/FinanceDashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ProtectedRoute, RoleGuard } from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
@@ -35,6 +36,7 @@ function App() {
             </RoleGuard>
           }
         />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route
           path="/requests/new"
           element={

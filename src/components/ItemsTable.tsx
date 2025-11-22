@@ -33,7 +33,7 @@ export const ItemsTable = ({ items = [], currency = 'USD', caption }: Props) => 
           {items.map(item => (
             <tr key={item.id} className="border-t border-slate-100">
               <td className="px-4 py-2 font-medium text-slate-700">{item.name}</td>
-              <td className="px-4 py-2 text-slate-500">{item.description || '—'}</td>
+              <td className="px-4 py-2 text-slate-500">{item.description || 'N/A'}</td>
               <td className="px-4 py-2 text-right">{item.quantity}</td>
               <td className="px-4 py-2 text-right">{formatCurrency(item.unitPrice, currency)}</td>
               <td className="px-4 py-2 text-right font-semibold">

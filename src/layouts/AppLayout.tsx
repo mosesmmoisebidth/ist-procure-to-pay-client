@@ -1,6 +1,10 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useMemo } from 'react';
+import { formatRole } from '../utils/format';
+import { useToast } from '../hooks/useToast';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 const navByRole = {
   staff: [
@@ -30,12 +34,32 @@ const getNavItems = (role?: string) => {
 
 export const AppLayout = () => {
   const { user, logout } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const items = useMemo(() => getNavItems(user?.role), [user?.role]);
+  const initials = useMemo(() => {
+    if (!user) return '';
+    const source = user.fullName || user.username;
+    return source
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part.charAt(0).toUpperCase())
+      .join('');
+  }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const handleLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await logout();
+      toast.info('You have been logged out.');
+      navigate('/login', { replace: true });
+    } finally {
+      setLogoutLoading(false);
+      setConfirmingLogout(false);
+    }
   };
 
   return (
@@ -76,23 +100,47 @@ export const AppLayout = () => {
           </div>
           <div className="flex items-center gap-4">
             {user && (
-              <div className="text-right">
-                <p className="text-sm font-medium text-slate-800">{user.name}</p>
-                <p className="text-xs uppercase tracking-wide text-slate-400">{user.role.replace('_', ' ')}</p>
-              </div>
+              <>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-3 rounded-full border border-slate-200 px-3 py-1.5 text-left text-slate-700 transition hover:border-slate-300"
+                >
+                  <div className="flex flex-col text-xs leading-tight">
+                    <span className="text-sm font-semibold text-slate-900">
+                      {user.fullName || user.username}
+                    </span>
+                    <span className="text-[11px] uppercase tracking-wide text-slate-400">
+                      {formatRole(user.role)}
+                    </span>
+                  </div>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                    {initials || 'U'}
+                  </span>
+                </Link>
+                <button
+                  onClick={() => setConfirmingLogout(true)}
+                  className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+                >
+                  Logout
+                </button>
+              </>
             )}
-            <button
-              onClick={handleLogout}
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-            >
-              Logout
-            </button>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-6 lg:px-10">
           <Outlet />
         </main>
       </div>
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Sign out?"
+        description="You will be redirected to the login screen and your session token will be cleared."
+        confirmLabel="Logout"
+        onConfirm={handleLogout}
+        onCancel={() => !logoutLoading && setConfirmingLogout(false)}
+        loading={logoutLoading}
+        icon={<LogOut className="h-5 w-5 text-rose-600" />}
+      />
     </div>
   );
 };

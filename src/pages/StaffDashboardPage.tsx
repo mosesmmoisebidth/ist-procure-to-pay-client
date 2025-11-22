@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FileText, CheckCircle2, Receipt, Shield, RefreshCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useRequestData } from '../context/RequestContext';
+import { useStaffRequests } from '../hooks/useApiRequests';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../utils/format';
 import { StatCard } from '../components/StatCard';
@@ -27,23 +27,21 @@ const indicators = [
 
 export const StaffDashboardPage = () => {
   const { user } = useAuth();
-  const { requests } = useRequestData();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<(typeof statusFilters)[number]>('ALL');
+  const statusParam = status === 'ALL' ? undefined : status;
+  const { data, isLoading } = useStaffRequests(statusParam);
+  const requests = data?.results ?? [];
 
-  const myRequests = useMemo(() => {
-    const mine = requests.filter(req => req.createdBy.id === user?.id);
-    if (status === 'ALL') return mine;
-    return mine.filter(req => req.status === status);
-  }, [requests, user?.id, status]);
+  const myRequests = useMemo(() => requests.filter(req => req.createdBy.id === user?.id), [requests, user?.id]);
 
   const stats = useMemo(() => {
-    const mine = requests.filter(req => req.createdBy.id === user?.id);
     return {
-      total: mine.length,
-      pending: mine.filter(req => req.status === 'PENDING').length,
-      approved: mine.filter(req => req.status === 'APPROVED').length,
+      total: myRequests.length,
+      pending: myRequests.filter(req => req.status === 'PENDING').length,
+      approved: myRequests.filter(req => req.status === 'APPROVED').length,
     };
-  }, [requests, user?.id]);
+  }, [myRequests]);
 
   const applyFilter = (filter: (typeof statusFilters)[number]) => setStatus(filter);
 
@@ -95,7 +93,13 @@ export const StaffDashboardPage = () => {
             </button>
           </div>
         </div>
-        {myRequests.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3 p-6">
+            {[...Array(3)].map((_, idx) => (
+              <div key={idx} className="animate-pulse rounded-2xl bg-slate-100 px-5 py-4" />
+            ))}
+          </div>
+        ) : myRequests.length === 0 ? (
           <div className="p-8">
             <EmptyState
               title="No requests yet"
@@ -125,7 +129,7 @@ export const StaffDashboardPage = () => {
                       <p className="font-semibold text-slate-900">{request.title}</p>
                       <p className="text-xs text-slate-500">{request.id}</p>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{request.vendorName || '—'}</td>
+                    <td className="px-5 py-4 text-slate-600">{request.vendorName || 'N/A'}</td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap gap-2">
                         {indicators.map(ind => {
@@ -157,15 +161,18 @@ export const StaffDashboardPage = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => (window.location.href = `/requests/${request.id}/edit`)}
+                            onClick={() => navigate(`/requests/${request.id}/edit`)}
                           >
                             Edit
                           </Button>
                         )}
                         {request.status === 'APPROVED' && !request.receiptUrl && (
-                          <Button variant="secondary" size="sm">
+                          <Link
+                            to={`/requests/${request.id}`}
+                            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400"
+                          >
                             Upload receipt
-                          </Button>
+                          </Link>
                         )}
                         <Link
                           to={`/requests/${request.id}`}
