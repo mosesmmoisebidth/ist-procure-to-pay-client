@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -10,6 +10,7 @@ import {
   ClipboardList,
   Clock3,
   BadgeCheck,
+  Search,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useStaffRequests } from '../hooks/useApiRequests';
@@ -38,8 +39,10 @@ export const StaffDashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<(typeof statusFilters)[number]>('ALL');
+  const [search, setSearch] = useState('');
   const statusParam = status === 'ALL' ? undefined : status;
-  const { data, isLoading } = useStaffRequests(statusParam);
+  const deferredSearch = useDeferredValue(search);
+  const { data, isLoading } = useStaffRequests({ status: statusParam, search: deferredSearch });
   const requests = data?.results ?? [];
 
   const myRequests = useMemo(() => requests.filter(req => req.createdBy.id === user?.id), [requests, user?.id]);
@@ -104,7 +107,7 @@ export const StaffDashboardPage = () => {
             <p className="text-sm font-semibold text-slate-700">Filter by status</p>
             <p className="text-xs text-slate-500">Choose a badge to refine your list</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {statusFilters.map(filter => (
               <FilterChip key={filter} active={status === filter} onClick={() => setStatus(filter)}>
                 {filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}
@@ -116,6 +119,15 @@ export const StaffDashboardPage = () => {
             >
               <RefreshCcw className="h-3 w-3" /> Reset
             </button>
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search title, reference, vendor"
+                className="w-48 bg-transparent outline-none placeholder:text-slate-400"
+              />
+            </div>
           </div>
         </div>
         {isLoading ? (

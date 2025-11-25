@@ -129,14 +129,20 @@ const normalizeRequest = (data: ApiRequest): PurchaseRequest => ({
   neededBy: data.needed_by || undefined,
 });
 
-export const useStaffRequests = (status?: 'PENDING' | 'APPROVED' | 'REJECTED') =>
+type StaffFilters = {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  search?: string;
+};
+
+export const useStaffRequests = (filters?: StaffFilters) =>
   useQuery({
-    queryKey: ['requests', 'staff', status ?? 'ALL'],
+    queryKey: ['requests', 'staff', filters?.status ?? 'ALL', filters?.search ?? ''],
     queryFn: async () => {
       const res = await api.get('/requests/', {
         params: {
           mine: true,
-          status,
+          status: filters?.status,
+          search: filters?.search,
         },
       });
       return {
@@ -233,11 +239,15 @@ export const useSubmitReceipt = (id: string) => {
   });
 };
 
-export const useApproverRequests = () =>
+type ApproverFilters = { search?: string };
+
+export const useApproverRequests = (filters?: ApproverFilters) =>
   useQuery({
-    queryKey: ['requests', 'approver'],
+    queryKey: ['requests', 'approver', filters?.search ?? ''],
     queryFn: async () => {
-      const res = await api.get('/requests/', { params: { pending_for_me: true } });
+      const res = await api.get('/requests/', {
+        params: { pending_for_me: true, search: filters?.search },
+      });
       return {
         ...res.data,
         results: res.data.results.map(normalizeRequest),
@@ -245,13 +255,21 @@ export const useApproverRequests = () =>
     },
   });
 
-export const useFinanceRequests = (validation?: 'matched' | 'mismatched' | 'pending') =>
+type FinanceFilters = {
+  validation?: 'matched' | 'mismatched' | 'pending';
+  search?: string;
+};
+
+export const useFinanceRequests = (filters?: FinanceFilters) =>
   useQuery({
-    queryKey: ['requests', 'finance', validation ?? 'all'],
+    queryKey: ['requests', 'finance', filters?.validation ?? 'all', filters?.search ?? ''],
     queryFn: async () => {
       const params: Record<string, string> = { status: 'APPROVED' };
-      if (validation) {
-        params.validation = validation;
+      if (filters?.validation) {
+        params.validation = filters.validation;
+      }
+      if (filters?.search) {
+        params.search = filters.search;
       }
       const res = await api.get('/finance/requests/', { params });
       return {

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ReceiptText, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, ReceiptText, AlertTriangle, Search } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../utils/format';
 import { StatCard } from '../components/StatCard';
@@ -10,6 +10,8 @@ type ValidationFilter = 'ALL' | 'MATCHED' | 'MISMATCHED' | 'UNPROCESSED';
 
 export const FinanceDashboardPage = () => {
   const [validationFilter, setValidationFilter] = useState<ValidationFilter>('ALL');
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const validationParam =
     validationFilter === 'ALL'
       ? undefined
@@ -18,7 +20,7 @@ export const FinanceDashboardPage = () => {
         : validationFilter === 'MATCHED'
           ? 'matched'
           : 'mismatched';
-  const { data, isLoading } = useFinanceRequests(validationParam);
+  const { data, isLoading } = useFinanceRequests({ validation: validationParam, search: deferredSearch });
   const requests = data?.results ?? [];
 
   const stats = useMemo(() => {
@@ -68,7 +70,7 @@ export const FinanceDashboardPage = () => {
       <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
           <p className="text-sm font-medium text-slate-600">Validation filter</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {(['ALL', 'MATCHED', 'MISMATCHED', 'UNPROCESSED'] as ValidationFilter[]).map(filter => (
               <button
                 key={filter}
@@ -88,6 +90,15 @@ export const FinanceDashboardPage = () => {
                       : 'Awaiting validation'}
               </button>
             ))}
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search title, reference, vendor"
+                className="w-56 bg-transparent outline-none placeholder:text-slate-400"
+              />
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">

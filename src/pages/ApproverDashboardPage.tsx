@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, History } from 'lucide-react';
+import { ShieldCheck, History, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency, formatDate } from '../utils/format';
@@ -8,7 +8,9 @@ import { useApproverRequests } from '../hooks/useApiRequests';
 
 export const ApproverDashboardPage = () => {
   const { user } = useAuth();
-  const { data, isLoading } = useApproverRequests();
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
+  const { data, isLoading } = useApproverRequests({ search: deferredSearch });
   const pending = data?.results ?? [];
   const history = useMemo(() => {
     if (!user) return [];
@@ -18,7 +20,7 @@ export const ApproverDashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-3xl border border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 px-6 py-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-slate-50 px-6 py-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Approver workspace</p>
           <h1 className="text-2xl font-semibold text-slate-900">Pending Approvals</h1>
@@ -26,6 +28,17 @@ export const ApproverDashboardPage = () => {
         </div>
         <div className="rounded-2xl bg-white p-3 text-emerald-600 shadow-inner">
           <ShieldCheck className="h-7 w-7" />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600">
+          <Search className="h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search title, reference, vendor"
+            className="w-64 bg-transparent outline-none placeholder:text-slate-400"
+          />
         </div>
       </div>
       <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-white shadow-sm">
