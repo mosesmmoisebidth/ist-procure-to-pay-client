@@ -62,7 +62,7 @@ export const LoginPage = () => {
     }
   };
 
-  const hero = heroImages[Math.floor(Math.random() * heroImages.length)] ?? '/procure-to-pay.png';
+  const [hero] = useState(() => heroImages[Math.floor(Math.random() * heroImages.length)] ?? '/procure-to-pay.png');
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-white lg:flex-row">
