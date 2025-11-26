@@ -114,11 +114,15 @@ export const RequestDetailPage = () => {
   const handleDecision = async (mode: 'approve' | 'reject', comment?: string) => {
     try {
       if (mode === 'approve' && approveMutation) {
-        await approveMutation.mutateAsync({ comment });
-        toast.success('Approval recorded');
+        const updated = await approveMutation.mutateAsync({ comment });
+        if (updated?.status === 'APPROVED') {
+          toast.success('Request fully approved. Staff and finance have been notified via email.');
+        } else {
+          toast.success('Approval recorded. Requester and next approver have been notified via email.');
+        }
       } else if (mode === 'reject' && rejectMutation) {
         await rejectMutation.mutateAsync({ comment });
-        toast.error('Request rejected');
+        toast.error('Request rejected. Requester has been notified via email.');
       }
     } catch {
       toast.error('Unable to record decision. Please try again.');
